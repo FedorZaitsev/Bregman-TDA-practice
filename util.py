@@ -145,11 +145,68 @@ def ProcessMatrices(mat_folder, max_homology_dim=2, normalize=True, columns_as_v
             arr[i] = (arr[i] / (arr[i].sum(axis=1) + 1e-6)[:, None])
     
     stats = []
+    phs = []
     for i in range(4):
         marked = CechRadius(arr[i], max_homology_dim + 1)
         st = BuildFiltration(marked)
         for j in range(max_homology_dim):
             ph = st.persistence_intervals_in_dimension(j)
             stats += GetStatistics(ph)
+            phs.append(ph)
     
-    return stats
+    return stats, phs
+
+
+def ParseHTML(corrupted_files):
+    composers = ['Beethoven', 'Haydn', 'Mozart']
+    genres = dict(zip(composers, [{}, {}, {}]))
+    names_for_genres = dict(zip(composers, [{}, {}, {}]))
+
+    with open("html/Be.htm", "r") as f:
+        file = f.read()
+        search='href="MIDIfiles/Beethoven/BeethovenSQ/'
+        while True:
+            file = file[file.find(search) + len(search):]
+            if file[0:9] != 'Beethoven':
+                break
+            name, genre = file.split('/')[1].split('\"')[0:2]
+            name = name[:-3] + 'mid'
+            if name in corrupted_files:
+                continue
+            genre=genre.split('&')[0].replace('<', '').replace('>', '').replace('\n', '').strip()
+            genres['Beethoven'][name] = genre
+            names_for_genres['Beethoven'][genre] = names_for_genres['Beethoven'].get(genre, set()).union(set([name]))
+
+
+    with open("html/Ha.htm", "r") as f:
+        file = f.read()
+        search='href="MIDIfiles/Haydn/HaydnSQ/'
+        while True:
+            file = file[file.find(search) + len(search):]
+            if file[0:5] != 'Haydn':
+                break
+            name, genre = file.split('/')[1].split('\"')[0:2]
+            name = name[:-3] + 'mid'
+            if name in corrupted_files:
+                continue
+            genre=genre.split('&')[0].replace('<', '').replace('>', '').replace('\n', '').strip()
+            genres['Haydn'][name] = genre
+            names_for_genres['Haydn'][genre] = names_for_genres['Haydn'].get(genre, set()).union(set([name]))
+
+
+    with open("html/Mo.htm", "r") as f:
+        file = f.read()
+        search='href="MIDIfiles/Mozart/MozartSQ/'
+        while True:
+            file = file[file.find(search) + len(search):]
+            if file[0:6] != 'Mozart':
+                break
+            name, genre = file.split('/')[1].split('\"')[0:2]
+            name = name[:-3] + 'mid'
+            if name in corrupted_files:
+                continue
+            genre=genre.split('&')[0].replace('<', '').replace('>', '').replace('\n', '').strip()
+            genres['Mozart'][name] = genre
+            names_for_genres['Mozart'][genre] = names_for_genres['Mozart'].get(genre, set()).union(set([name]))
+        
+    return genres, names_for_genres
